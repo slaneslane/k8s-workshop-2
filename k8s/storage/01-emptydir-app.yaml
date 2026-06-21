@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-app-emptydir
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flask-app-emptydir
+  template:
+    metadata:
+      labels:
+        app: flask-app-emptydir
+    spec:
+      containers:
+        - name: flask-app
+          image: localhost:5000/k8s-workshop-app:debug
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: flask-app-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: flask-app-secret
+                  key: DATABASE_URL
+          volumeMounts:
+            - name: app-logs
+              mountPath: /data
+      volumes:
+        - name: app-logs
+          emptyDir: {}

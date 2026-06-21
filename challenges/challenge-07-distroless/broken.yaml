@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: distroless-demo
+spec:
+  containers:
+    - name: app
+      image: gcr.io/distroless/static-debian12:nonroot
+      command: ["/busybox/sh"]

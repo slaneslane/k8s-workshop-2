@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: oom-demo
+spec:
+  restartPolicy: Always
+  containers:
+    - name: stress
+      image: python:3.12-slim
+      command: ["python", "-c", "a=[]\nwhile True:\n a.append(bytearray(1024*1024))"]
+      resources:
+        limits:
+          memory: 64Mi
+        requests:
+          memory: 64Mi

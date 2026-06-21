@@ -1,0 +1,12 @@
+OK  module-05-fast-failure-diagnosis/01-imagepullbackoff.yaml
+OK  module-05-fast-failure-diagnosis/02-crashloopbackoff.yaml
+OK  module-05-fast-failure-diagnosis/03-readiness-failure.yaml
+OK  modules/module-06-postgresql-and-database-migrations/01-wrong-database-secret.yaml (2 document(s))
+OK  modules/module-06-postgresql-and-database-migrations/02-broken-migration-job.yaml (1 document(s))
+OK  modules/module-06-postgresql-and-database-migrations/03-repair-migration-job.yaml (1 document(s))
+OK  module-08-distroless-and-no-shell-troubleshooting/01-distroless-deployment.yaml
+OK  module-09-requests-limits-and-runtime-behavior/01-low-memory-oom.yaml
+OK  module-10-resourcequota-and-limitrange/01-small-resourcequota.yaml
+OK  module-10-resourcequota-and-limitrange/02-pod-exceeding-limitrange.yaml
+OK  module-11-service-routing-and-application-availability/01-service-selector-mismatch.yaml
+OK  module-11-service-routing-and-application-availability/02-service-wrong-targetport.yaml

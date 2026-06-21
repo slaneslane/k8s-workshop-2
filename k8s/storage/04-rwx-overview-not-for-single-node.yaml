@@ -1,0 +1,11 @@
+# Example only. This requires a StorageClass that supports ReadWriteMany.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shared-rwx-example
+spec:
+  accessModes: ["ReadWriteMany"]
+  storageClassName: nfs-or-cephfs-or-efs
+  resources:
+    requests:
+      storage: 1Gi

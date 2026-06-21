@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: module10-small-quota
+spec:
+  hard:
+    pods: "3"
+    requests.cpu: "350m"
+    requests.memory: 640Mi
+    limits.cpu: "1500m"
+    limits.memory: 1536Mi

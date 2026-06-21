@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: flask-app-secret
+type: Opaque
+stringData:
+  DATABASE_URL: postgresql://workshop:workshop@postgres-wrong:5432/workshop
+  POSTGRES_DB: workshop
+  POSTGRES_USER: workshop
+  POSTGRES_PASSWORD: workshop

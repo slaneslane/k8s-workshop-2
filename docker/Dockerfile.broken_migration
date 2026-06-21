@@ -1,0 +1,8 @@
+FROM postgres:16-alpine
+
+WORKDIR /workshop
+
+COPY modules/module-06-postgresql-and-database-migrations/migrations/broken/999_broken_migration.sql \
+     /migrations/sql/999_broken_migration.sql
+
+CMD ["sh", "-c", "psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f /migrations/sql/999_broken_migration.sql"]
