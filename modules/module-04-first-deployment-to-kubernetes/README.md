@@ -18,6 +18,9 @@ kubectl delete job db-migration -n k8s-workshop --ignore-not-found=true
 kubectl apply -n k8s-workshop -f k8s/base/05-migration-job.yaml
 kubectl -n k8s-workshop wait --for=condition=complete job/db-migration --timeout=120s
 
+kubectl -n k8s-workshop logs job/db-migration
+kubectl -n k8s-workshop get deploy,rs,pod,svc,endpoints
+
 kubectl apply -n k8s-workshop -f k8s/base/06-app-deployment.yaml
 kubectl apply -n k8s-workshop -f k8s/base/07-app-service.yaml
 kubectl -n k8s-workshop rollout status deployment/flask-app --timeout=120s
