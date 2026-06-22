@@ -2,60 +2,47 @@
 
 ## Goal
 
-Compare ephemeral Pod storage with persistent `ReadWriteOnce` PVC storage and inspect ConfigMap / Secret volumes.
+Understand the difference between temporary and persistent storage and learn how ConfigMaps and Secrets can be exposed as files.
 
-This module uses reference lab manifests from:
+This module uses:
 
 ```text
 k8s/storage/
+├── 01-emptydir-app.yaml
+├── 02-pvc-rwo.yaml
+└── 03-configmap-secret-volumes.yaml
 ```
 
-There are no module-specific YAML files for Module 7.
 
 ---
 
-## Lab 1 — emptyDir
+## Lab 7A — emptyDir
 
-Create the emptyDir version:
+`emptyDir` is temporary storage created for a Pod.
 
 ```bash
 kubectl apply -n k8s-workshop -f k8s/storage/01-emptydir-app.yaml
 
-kubectl -n k8s-workshop rollout status deployment/flask-app-emptydir --timeout=120s
-```
+kubectl -n k8s-workshop exec flask-app-emptydir -- tail /data/events.log
 
-Open a port-forward in one terminal:
+kubectl -n k8s-workshop delete pod flask-app-emptydir
 
-```bash
-kubectl -n k8s-workshop port-forward deployment/flask-app-emptydir 8081:8080
-```
+kubectl apply -n k8s-workshop -f k8s/storage/01-emptydir-app.yaml
 
-In another terminal:
-
-```bash
-curl http://localhost:8081/file-log
-```
-
-Restart the Pod:
-
-```bash
-kubectl -n k8s-workshop delete pod -l app=flask-app-emptydir
-
-kubectl -n k8s-workshop rollout status deployment/flask-app-emptydir --timeout=120s
-```
-
-Start the port-forward again and inspect the file log:
-
-```bash
-kubectl -n k8s-workshop port-forward deployment/flask-app-emptydir 8081:8080
-
-curl http://localhost:8081/file-log
+kubectl -n k8s-workshop exec flask-app-emptydir -- ls -la /data
 ```
 
 Expected result:
 
 ```text
-Data stored in emptyDir does not survive Pod recreation.
+The old events.log file is gone.
+```
+
+Takeaway:
+
+```text
+emptyDir lives as long as the Pod lives.
+Delete the Pod → emptyDir disappears.
 ```
 
 Cleanup:
@@ -66,21 +53,15 @@ kubectl delete -n k8s-workshop -f k8s/storage/01-emptydir-app.yaml
 
 ---
 
-## Lab 2 — PVC with ReadWriteOnce
+## Lab 7B — PVC RWO
 
-Create the PVC version:
+A PersistentVolumeClaim survives Pod recreation.
 
 ```bash
 kubectl apply -n k8s-workshop -f k8s/storage/02-pvc-rwo.yaml
 
 kubectl -n k8s-workshop rollout status deployment/flask-app-pvc --timeout=120s
 
-kubectl -n k8s-workshop get pvc
-```
-
-Open a port-forward:
-
-```bash
 kubectl -n k8s-workshop port-forward deployment/flask-app-pvc 8082:8080
 ```
 
@@ -90,7 +71,7 @@ In another terminal:
 curl http://localhost:8082/file-log
 ```
 
-Restart the Pod:
+Delete the Pod and let Kubernetes recreate it:
 
 ```bash
 kubectl -n k8s-workshop delete pod -l app=flask-app-pvc
@@ -98,18 +79,25 @@ kubectl -n k8s-workshop delete pod -l app=flask-app-pvc
 kubectl -n k8s-workshop rollout status deployment/flask-app-pvc --timeout=120s
 ```
 
-Start the port-forward again and inspect the file log:
+Check the file again:
 
 ```bash
-kubectl -n k8s-workshop port-forward deployment/flask-app-pvc 8082:8080
-
 curl http://localhost:8082/file-log
+
+kubectl -n k8s-workshop get pvc,pv
 ```
 
 Expected result:
 
 ```text
-Data stored on the PVC survives Pod recreation.
+The file survives Pod recreation.
+```
+
+Takeaway:
+
+```text
+PVC survives Pod recreation.
+RWO means the volume can be mounted read/write by one node at a time.
 ```
 
 Cleanup:
@@ -120,24 +108,33 @@ kubectl delete -n k8s-workshop -f k8s/storage/02-pvc-rwo.yaml
 
 ---
 
-## Lab 3 — ConfigMap and Secret volumes
+## Lab 7C — ConfigMap and Secret volumes
 
-Apply the reader Pod:
+ConfigMap and Secret keys can be mounted as files.
 
 ```bash
 kubectl apply -n k8s-workshop -f k8s/storage/03-configmap-secret-volumes.yaml
 
-kubectl -n k8s-workshop wait --for=condition=Ready pod/volume-reader --timeout=60s
+kubectl -n k8s-workshop exec volume-reader -- ls -la /config
+
+kubectl -n k8s-workshop exec volume-reader -- ls -la /secret
+
+kubectl -n k8s-workshop exec volume-reader -- cat /config/application.properties
+
+kubectl -n k8s-workshop exec volume-reader -- cat /secret/password.txt
 ```
 
-Inspect mounted files:
+Expected result:
 
-```bash
-kubectl -n k8s-workshop exec -it volume-reader -- sh
+```text
+ConfigMap keys become files in /config.
+Secret keys become files in /secret.
+```
 
-cat /config/application.properties
-cat /secret/password.txt
-exit
+Takeaway:
+
+```text
+ConfigMap and Secret can be mounted as files, not only injected as environment variables.
 ```
 
 Cleanup:
@@ -148,6 +145,78 @@ kubectl delete -n k8s-workshop -f k8s/storage/03-configmap-secret-volumes.yaml
 
 ---
 
-## RWX note
+## PostgreSQL storage pattern
 
-RWX is discussed on slides only. This workshop uses single-node K3s, so it cannot reliably demonstrate multi-node RWX behavior or RWO multi-attach conflicts.
+PostgreSQL uses a StatefulSet with `volumeClaimTemplates`:
+
+```text
+StatefulSet
+    ↓
+volumeClaimTemplates
+    ↓
+PVC
+    ↓
+Persistent Volume
+```
+
+In this workshop:
+
+```text
+postgres-0
+    ↓
+postgres-data-postgres-0
+    ↓
+Persistent Volume
+```
+
+This gives PostgreSQL stable storage across Pod recreation.
+
+It does not provide database HA by itself.
+
+---
+
+## Single-node lab caveat
+
+This workshop uses single-node K3s.
+
+```text
+Two Pods on the same node may appear to work with storage patterns
+that would behave differently in a multi-node cluster.
+```
+
+Important:
+
+```text
+Multi-attach errors require multi-node clusters.
+RWO semantics are important, but this lab does not prove all production behaviors.
+```
+
+Use this module to learn storage semantics and patterns, not full distributed storage behavior.
+
+---
+
+## Key takeaways
+
+```text
+emptyDir
+  temporary storage
+  removed when the Pod is removed
+
+PVC
+  persistent storage
+  survives Pod recreation
+
+ConfigMap volume
+  configuration as files
+
+Secret volume
+  sensitive data as files
+
+StatefulSet + volumeClaimTemplates
+  stable identity
+  dedicated persistent storage per Pod
+
+Single-node K3s
+  good for learning semantics
+  not enough to demonstrate all multi-node storage behavior
+```
